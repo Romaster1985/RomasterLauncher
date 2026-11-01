@@ -38,22 +38,28 @@
         </activity>
 
         <activity
-            android:name=".ui.AppDrawerActivity"
-            android:exported="false"
-            android:theme="@style/Theme.RomasterLauncher.Drawer"
-            android:windowSoftInputMode="adjustPan" />
-
-        <activity
             android:name=".ui.SettingsActivity"
             android:exported="false"
             android:label="@string/settings"
             android:parentActivityName=".ui.HomeActivity" />
 
         <activity
+            android:name=".ui.HiddenAppsActivity"
+            android:exported="false"
+            android:label="Aplicaciones ocultas"
+            android:parentActivityName=".ui.SettingsActivity" />
+
+        <activity
             android:name=".ui.WallpaperPickerActivity"
             android:exported="false"
             android:theme="@style/Theme.RomasterLauncher.Transparent" />
 
+            <activity
+            android:name=".ui.DrawerGroupsActivity"
+            android:exported="false"
+            android:label="Grupos del cajón"
+            android:parentActivityName=".ui.SettingsActivity"
+            android:theme="@style/Theme.RomasterLauncher" />
     </application>
 
 </manifest>

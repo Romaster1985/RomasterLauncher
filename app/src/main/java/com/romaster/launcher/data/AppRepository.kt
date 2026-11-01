@@ -15,11 +15,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
 
-/**
- * Repository of installed launchable apps with caching.
- * Loads once and keeps the list in memory. Reloads only when packages change
- * or when forceRefresh() is called (e.g. after changing icon pack).
- */
 class AppRepository(private val context: Context) {
 
     private val pm: PackageManager = context.packageManager
@@ -30,17 +25,14 @@ class AppRepository(private val context: Context) {
     val apps: StateFlow<List<AppInfo>> = _apps.asStateFlow()
 
     private val isLoading = AtomicBoolean(false)
-    private var lastLoadTime = 0L
 
     private val packageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            // Package added / removed / changed → force a refresh soon
             forceRefresh()
         }
     }
 
     init {
-        // Listen for package changes so the list stays up to date
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_PACKAGE_ADDED)
             addAction(Intent.ACTION_PACKAGE_REMOVED)
@@ -56,10 +48,6 @@ class AppRepository(private val context: Context) {
         }
     }
 
-    /**
-     * Returns the cached list immediately if available, otherwise loads it.
-     * Subsequent calls are very fast.
-     */
     suspend fun loadApps(force: Boolean = false): List<AppInfo> {
         if (!force && _apps.value.isNotEmpty()) {
             return _apps.value
@@ -67,26 +55,20 @@ class AppRepository(private val context: Context) {
         return refreshApps()
     }
 
-    /**
-     * Forces a full reload (useful after changing icon pack).
-     */
     fun forceRefresh() {
-        // Launch on IO so callers don't block
-        // We use a simple approach: next loadApps(force=true) will reload
-        lastLoadTime = 0L
-        _apps.value = emptyList() // clear so next load rebuilds
+        _apps.value = emptyList()
     }
+
+    fun getCachedApps(): List<AppInfo> = _apps.value
 
     private suspend fun refreshApps(): List<AppInfo> = withContext(Dispatchers.IO) {
         if (!isLoading.compareAndSet(false, true)) {
-            // Another refresh is already running – just return current
             return@withContext _apps.value
         }
         try {
             val mainIntent = Intent(Intent.ACTION_MAIN, null).apply {
                 addCategory(Intent.CATEGORY_LAUNCHER)
             }
-
             val resolveInfos: List<ResolveInfo> = pm.queryIntentActivities(mainIntent, 0)
             val apps = ArrayList<AppInfo>(resolveInfos.size)
 
@@ -94,12 +76,10 @@ class AppRepository(private val context: Context) {
                 val activityInfo = ri.activityInfo ?: continue
                 val packageName = activityInfo.packageName
                 val activityName = activityInfo.name
-
-                // Skip ourselves
                 if (packageName == context.packageName) continue
 
                 val label = ri.loadLabel(pm)?.toString() ?: packageName
-                val defaultIcon = ri.loadIcon(pm)
+                val defaultIcon = try { ri.loadIcon(pm) } catch (e: Exception) { null }
                 val icon = iconPackManager.getIcon(packageName, activityName, defaultIcon)
                 val isSystem = (activityInfo.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
 
@@ -113,10 +93,8 @@ class AppRepository(private val context: Context) {
                     )
                 )
             }
-
             apps.sortBy { it.label.lowercase() }
             _apps.value = apps
-            lastLoadTime = System.currentTimeMillis()
             apps
         } finally {
             isLoading.set(false)

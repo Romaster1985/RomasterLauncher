@@ -22,6 +22,17 @@ class HomeLayoutRepository(context: Context) {
                 put("spanX", item.spanX)
                 put("spanY", item.spanY)
                 put("isDock", item.isDock)
+                put("isFolder", item.isFolder)
+                put("folderName", item.folderName)
+                val members = JSONArray()
+                for (m in item.folderMembers) {
+                    members.put(JSONObject().apply {
+                        put("packageName", m.packageName)
+                        put("activityName", m.activityName)
+                        put("label", m.label)
+                    })
+                }
+                put("folderMembers", members)
             }
             array.put(obj)
         }
@@ -35,18 +46,35 @@ class HomeLayoutRepository(context: Context) {
             val list = mutableListOf<HomeItem>()
             for (i in 0 until array.length()) {
                 val obj = array.getJSONObject(i)
+                val members = mutableListOf<FolderMember>()
+                val memArr = obj.optJSONArray("folderMembers")
+                if (memArr != null) {
+                    for (j in 0 until memArr.length()) {
+                        val m = memArr.getJSONObject(j)
+                        members.add(
+                            FolderMember(
+                                packageName = m.getString("packageName"),
+                                activityName = m.getString("activityName"),
+                                label = m.optString("label", "")
+                            )
+                        )
+                    }
+                }
                 list.add(
                     HomeItem(
                         id = obj.getString("id"),
-                        packageName = obj.getString("packageName"),
-                        activityName = obj.getString("activityName"),
-                        label = obj.getString("label"),
+                        packageName = obj.optString("packageName", ""),
+                        activityName = obj.optString("activityName", ""),
+                        label = obj.optString("label", ""),
                         screen = obj.optInt("screen", 0),
                         cellX = obj.optInt("cellX", 0),
                         cellY = obj.optInt("cellY", 0),
                         spanX = obj.optInt("spanX", 1),
                         spanY = obj.optInt("spanY", 1),
-                        isDock = obj.optBoolean("isDock", false)
+                        isDock = obj.optBoolean("isDock", false),
+                        isFolder = obj.optBoolean("isFolder", false),
+                        folderName = obj.optString("folderName", "Carpeta"),
+                        folderMembers = members
                     )
                 )
             }
