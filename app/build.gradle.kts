@@ -11,8 +11,8 @@ android {
         applicationId = "com.romaster.launcher"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 118
+        versionName = "1.9.118"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
