@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.RomasterLauncher" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/romaster_primary</item>
+        <item name="colorPrimaryDark">@color/romaster_primary_dark</item>
+        <item name="colorAccent">@color/romaster_accent</item>
+        <item name="android:colorBackground">@color/romaster_background</item>
+        <item name="colorSurface">@color/romaster_surface</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+    </style>
+
+    <style name="Theme.RomasterLauncher.Home" parent="Theme.RomasterLauncher">
+        <item name="android:windowShowWallpaper">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="Theme.RomasterLauncher.Drawer" parent="Theme.RomasterLauncher">
+        <item name="android:windowBackground">@drawable/bg_drawer_gradient</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="Theme.RomasterLauncher.Transparent" parent="Theme.RomasterLauncher">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
+    <style name="Widget.Romaster.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/romaster_card</item>
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">8dp</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <style name="Widget.Romaster.Button" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/romaster_surface_elevated</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="android:textColor">@color/romaster_text_primary</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+    </style>
+</resources>

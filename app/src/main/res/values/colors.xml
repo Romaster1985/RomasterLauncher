@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="romaster_primary">#6C5CE7</color>
+    <color name="romaster_primary_dark">#5A4BD1</color>
+    <color name="romaster_accent">#00CEC9</color>
+    <color name="romaster_background">#0F0F13</color>
+    <color name="romaster_surface">#1A1A22</color>
+    <color name="romaster_surface_elevated">#24242F</color>
+    <color name="romaster_card">#1E1E28</color>
+    <color name="romaster_text_primary">#F5F5F7</color>
+    <color name="romaster_text_secondary">#A0A0B0</color>
+    <color name="romaster_icon_bg">#2A2A38</color>
+    <color name="romaster_glass">#33FFFFFF</color>
+    <color name="romaster_glass_dark">#22000000</color>
+    <color name="romaster_ripple">#40FFFFFF</color>
+    <color name="romaster_success">#00B894</color>
+    <color name="romaster_danger">#FF6B6B</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="transparent">#00000000</color>
+</resources>

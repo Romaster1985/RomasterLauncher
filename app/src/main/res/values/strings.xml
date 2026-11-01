@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Romaster Launcher</string>
+    <string name="settings">Ajustes</string>
+    <string name="app_drawer">Cajón de aplicaciones</string>
+    <string name="search_apps">Buscar aplicaciones…</string>
+    <string name="change_wallpaper">Cambiar fondo de pantalla</string>
+    <string name="add_widget">Añadir widget</string>
+    <string name="remove_from_home">Quitar del escritorio</string>
+    <string name="app_info">Información de la app</string>
+    <string name="uninstall">Desinstalar</string>
+    <string name="no_apps_found">No se encontraron aplicaciones</string>
+    <string name="icon_pack">Pack de iconos</string>
+    <string name="default_icons">Iconos por defecto</string>
+    <string name="apply">Aplicar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="long_press_hint">Mantén pulsado un espacio vacío para más opciones</string>
+    <string name="drag_to_home">Arrastra un icono al escritorio</string>
+    <string name="home_screen">Escritorio</string>
+</resources>
