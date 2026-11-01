@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wallpaper xmlns:android="http://schemas.android.com/apk/res/android"
+    android:author="@string/app_name"
+    android:description="@string/wallpaper_service_description"
+    android:settingsActivity="com.romaster.launcher.ui.WallpaperPickerActivity"
+    android:thumbnail="@mipmap/ic_launcher"
+    android:showMetadataInPreview="true" />

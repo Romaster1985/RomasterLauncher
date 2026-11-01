@@ -17,4 +17,5 @@
     <string name="long_press_hint">Mantén pulsado un espacio vacío para más opciones</string>
     <string name="drag_to_home">Arrastra un icono al escritorio</string>
     <string name="home_screen">Escritorio</string>
+    <string name="wallpaper_service_description">Wallpapers incluidos en Romaster Launcher</string>
 </resources>
