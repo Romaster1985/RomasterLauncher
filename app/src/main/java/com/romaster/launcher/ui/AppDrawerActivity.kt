@@ -1,12 +1,15 @@
 package com.romaster.launcher.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
+import com.romaster.launcher.R
 import com.romaster.launcher.RomasterApp
 import com.romaster.launcher.data.AppInfo
 import com.romaster.launcher.databinding.ActivityAppDrawerBinding
@@ -27,6 +30,7 @@ class AppDrawerActivity : AppCompatActivity() {
 
         setupGrid()
         setupSearch()
+        setupSettingsButton()
         loadApps()
     }
 
@@ -54,9 +58,28 @@ class AppDrawerActivity : AppCompatActivity() {
         })
     }
 
+    private fun setupSettingsButton() {
+        // Visible settings button (gear icon next to search)
+        binding.btnSettings.setOnClickListener {
+            openSettings()
+        }
+
+        // Long-press on the search bar also opens settings
+        binding.searchApps.setOnLongClickListener {
+            openSettings()
+            true
+        }
+    }
+
     private fun loadApps() {
+        // Show a simple loading state if the list is empty
+        if (allApps.isEmpty()) {
+            // Optional: could show a progress indicator
+        }
+
         lifecycleScope.launch {
-            allApps = appRepo.loadApps()
+            // Uses the cache → second and subsequent opens are almost instant
+            allApps = appRepo.loadApps(force = false)
             adapter.submitList(allApps)
         }
     }
@@ -92,6 +115,23 @@ class AppDrawerActivity : AppCompatActivity() {
             )
         )
         homeRepo.saveItems(current)
-        Toast.makeText(this, "Añadido al escritorio. Vuelve al home para verlo.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            this,
+            "✓ Añadido al escritorio\nVuelve al home para verlo",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun openSettings() {
+        startActivity(Intent(this, SettingsActivity::class.java))
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh from cache (fast). Only force if icon pack might have changed.
+        lifecycleScope.launch {
+            allApps = appRepo.loadApps(force = false)
+            adapter.submitList(allApps)
+        }
     }
 }

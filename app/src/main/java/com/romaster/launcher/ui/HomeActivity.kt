@@ -1,15 +1,17 @@
 package com.romaster.launcher.ui
 
-import android.app.WallpaperManager
 import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.RecyclerView
 import com.romaster.launcher.R
 import com.romaster.launcher.RomasterApp
 import com.romaster.launcher.data.AppInfo
@@ -30,6 +32,9 @@ class HomeActivity : AppCompatActivity() {
     private var allApps: List<AppInfo> = emptyList()
     private var homeItems: MutableList<HomeItem> = mutableListOf()
 
+    // Track if a long-press happened on an icon so we don't also show the home menu
+    private var longPressedOnIcon = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityHomeBinding.inflate(layoutInflater)
@@ -38,6 +43,7 @@ class HomeActivity : AppCompatActivity() {
         setupDesktop()
         setupDock()
         setupListeners()
+        setupReorder()
 
         loadData()
     }
@@ -45,40 +51,156 @@ class HomeActivity : AppCompatActivity() {
     private fun setupDesktop() {
         desktopAdapter = AppIconAdapter(
             onClick = { app -> launchApp(app) },
-            onLongClick = { app, view -> showAppOptions(app, view) }
+            onLongClick = { app, view ->
+                longPressedOnIcon = true
+                showAppOptions(app, view)
+            }
         )
         binding.desktopIcons.layoutManager = GridLayoutManager(this, 4)
         binding.desktopIcons.adapter = desktopAdapter
+
+        // Make RecyclerView not consume long-presses on empty space
+        binding.desktopIcons.isNestedScrollingEnabled = false
+        binding.desktopIcons.setHasFixedSize(true)
     }
 
     private fun setupDock() {
         dockAdapter = AppIconAdapter(
             onClick = { app -> launchApp(app) },
-            onLongClick = { app, view -> showAppOptions(app, view) }
+            onLongClick = { app, view ->
+                longPressedOnIcon = true
+                showAppOptions(app, view)
+            }
         )
         binding.dockIcons.layoutManager = GridLayoutManager(this, 5)
         binding.dockIcons.adapter = dockAdapter
     }
 
     private fun setupListeners() {
+        // Open app drawer
         binding.btnOpenDrawer.setOnClickListener {
             startActivity(Intent(this, AppDrawerActivity::class.java))
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
 
+        // Long-press on the root (empty areas of the home screen)
         binding.homeRoot.setOnLongClickListener {
-            showHomeOptions(it)
+            if (!longPressedOnIcon) {
+                showHomeOptions(it)
+            }
+            longPressedOnIcon = false
             true
         }
 
-        binding.desktopIcons.setOnLongClickListener {
-            showHomeOptions(it)
-            true
+        // Also capture long-press that bubbles from the RecyclerView empty space
+        binding.desktopIcons.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
+            private var downX = 0f
+            private var downY = 0f
+            private var longPressTriggered = false
+
+            override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
+                when (e.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        downX = e.x
+                        downY = e.y
+                        longPressTriggered = false
+                        longPressedOnIcon = false
+                        // Schedule a long-press check
+                        rv.postDelayed({
+                            if (!longPressTriggered && !longPressedOnIcon) {
+                                // Check if the touch is still roughly in the same place
+                                // and no child was pressed
+                                val child = rv.findChildViewUnder(downX, downY)
+                                if (child == null) {
+                                    longPressTriggered = true
+                                    showHomeOptions(rv)
+                                }
+                            }
+                        }, 500) // 500ms long-press
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        longPressTriggered = true // cancel pending
+                    }
+                }
+                return false // never steal the event
+            }
+        })
+    }
+
+    /** Enable drag-to-reorder on desktop and dock */
+    private fun setupReorder() {
+        val desktopCallback = object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN or ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT,
+            0
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                val from = viewHolder.bindingAdapterPosition
+                val to = target.bindingAdapterPosition
+                if (from == RecyclerView.NO_POSITION || to == RecyclerView.NO_POSITION) return false
+
+                // Reorder the underlying homeItems that are NOT dock
+                val desktopItems = homeItems.filter { !it.isDock }.toMutableList()
+                if (from < desktopItems.size && to < desktopItems.size) {
+                    val item = desktopItems.removeAt(from)
+                    desktopItems.add(to, item)
+
+                    // Rebuild homeItems keeping dock items
+                    val dockItems = homeItems.filter { it.isDock }
+                    homeItems.clear()
+                    homeItems.addAll(desktopItems)
+                    homeItems.addAll(dockItems)
+                    homeRepo.saveItems(homeItems)
+                    refreshUi()
+                }
+                return true
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {}
+            override fun isLongPressDragEnabled() = true
         }
+        ItemTouchHelper(desktopCallback).attachToRecyclerView(binding.desktopIcons)
+
+        val dockCallback = object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT,
+            0
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                val from = viewHolder.bindingAdapterPosition
+                val to = target.bindingAdapterPosition
+                if (from == RecyclerView.NO_POSITION || to == RecyclerView.NO_POSITION) return false
+
+                val dockItems = homeItems.filter { it.isDock }.toMutableList()
+                if (from < dockItems.size && to < dockItems.size) {
+                    val item = dockItems.removeAt(from)
+                    dockItems.add(to, item)
+
+                    val desktopItems = homeItems.filter { !it.isDock }
+                    homeItems.clear()
+                    homeItems.addAll(desktopItems)
+                    homeItems.addAll(dockItems)
+                    homeRepo.saveItems(homeItems)
+                    refreshUi()
+                }
+                return true
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {}
+            override fun isLongPressDragEnabled() = true
+        }
+        ItemTouchHelper(dockCallback).attachToRecyclerView(binding.dockIcons)
     }
 
     private fun loadData() {
         lifecycleScope.launch {
+            // Uses cache → should be fast after first load
             allApps = appRepo.loadApps()
             homeItems = homeRepo.loadItems().toMutableList()
 
@@ -137,7 +259,11 @@ class HomeActivity : AppCompatActivity() {
             when (item.itemId) {
                 1 -> openWallpaperPicker()
                 2 -> {
-                    Toast.makeText(this, "Selector de widgets (próximamente más completo)", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this,
+                        "Selector de widgets (próximamente más completo)",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
                 3 -> startActivity(Intent(this, SettingsActivity::class.java))
             }
@@ -169,6 +295,7 @@ class HomeActivity : AppCompatActivity() {
         }
         homeRepo.saveItems(homeItems)
         refreshUi()
+        Toast.makeText(this, "Eliminado del escritorio", Toast.LENGTH_SHORT).show()
     }
 
     private fun openAppInfo(app: AppInfo) {
@@ -190,37 +317,16 @@ class HomeActivity : AppCompatActivity() {
             val intent = Intent(Intent.ACTION_SET_WALLPAPER)
             startActivity(Intent.createChooser(intent, getString(R.string.change_wallpaper)))
         } catch (e: Exception) {
-            try {
-                startActivity(Intent("android.intent.action.SET_WALLPAPER"))
-            } catch (ex: Exception) {
-                Toast.makeText(this, "No se pudo abrir el selector de fondos", Toast.LENGTH_SHORT).show()
-            }
+            Toast.makeText(this, "No se pudo abrir el selector de fondos", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    fun addAppToHome(app: AppInfo, toDock: Boolean = false) {
-        if (homeItems.any { it.packageName == app.packageName && it.activityName == app.activityName }) {
-            Toast.makeText(this, "Ya está en el escritorio", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val item = HomeItem(
-            id = UUID.randomUUID().toString(),
-            packageName = app.packageName,
-            activityName = app.activityName,
-            label = app.label,
-            isDock = toDock
-        )
-        homeItems.add(item)
-        homeRepo.saveItems(homeItems)
-        refreshUi()
-        Toast.makeText(this, "Añadido al escritorio", Toast.LENGTH_SHORT).show()
     }
 
     override fun onResume() {
         super.onResume()
+        // Only refresh the UI from cache – do NOT force a full PackageManager scan every time
         lifecycleScope.launch {
-            allApps = appRepo.loadApps()
+            allApps = appRepo.loadApps(force = false)
+            homeItems = homeRepo.loadItems().toMutableList()
             refreshUi()
         }
     }
